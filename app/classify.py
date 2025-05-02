@@ -1,37 +1,37 @@
-from datetime import datetime
+from astropy.coordinates import SkyCoord
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import astropy.units as u
 import numpy as np
 from astropy.time import Time
-from sunpy.io.special import read_srs
+from sunpy.map import Map
+
 from sunpy.net import Fido, attrs as a
 
+CUTOUT =  [800, 400] * u.pix
 
-def download_srs(time: datetime):
+
+def download_magnetogram(time):
     r"""
-    Download SRS file for given time.
+    Download magnetogram and prepare for use
 
     Parameters
     ----------
-    time
-        Time to search for SRS file
-
-    Returns
-    -------
+    time : datetime.datetime
 
     """
-    time = Time(time)
-    tstart = time - 12 * u.hour
-    tend = time + 12 * u.hour
-    srs_query = Fido.search(a.Time(tstart, tend), a.Instrument.soon)
-    if 'srs' not in srs_query.keys():
-        raise SRSNotFoundError(f'No SRS file found for {time.isot}')
-    closest_idx = np.argmin(srs_query['srs']['Start Time'] - time)
-    srs_file = Fido.fetch(srs_query['srs'][closest_idx])
-    if len(srs_file.errors) != 0:
-        raise SRSDownloadError(f"Error downloading file {srs_query['srs']['url']}")
-    return srs_file
+    query = Fido.search(a.Time(time, time + timedelta(minutes=1)),
+                        (a.Instrument.hmi & a.Physobs('LOS_magnetic_field') & a.Provider('JSOC'))
+                        | (a.Instrument.mdi & a.Physobs('LOS_magnetic_field') & a.Provider('SHA')))
+    if not query:
+        raise MagNotFoundError()
+    files = Fido.fetch(query['vso'][0])
+    if not files:
+        raise MagDownloadError()
+    mag_map = Map(files[0])
+    mag_map = mag_map.rotate()
+    return mag_map
 
 
 def classify(time: datetime, hgs_latitude: float, hgs_longitude: float):
@@ -51,70 +51,59 @@ def classify(time: datetime, hgs_latitude: float, hgs_longitude: float):
     Classification result
 
     """
-    srs_file = download_srs(time)
+    mag_map = download_magnetogram(time)
+    if 'hmi' in mag_map.detector.casefold():
+        size = CUTOUT
+    else:
+        size = CUTOUT/4
 
-    srs_path = Path(srs_file[0])
-    if srs_path.exists():
-        hgs_latitude = hgs_latitude << u.deg
-        hgs_longitude = hgs_longitude << u.deg
-        result = {
-            'time': time,
-            'hale_class': 'QS',
-            'mcintosh_class': 'QS',
-            'hgs_latitude': hgs_latitude.to_value(u.deg),
-            'hgs_longitude': hgs_longitude.to_value(u.deg)
-        }
-        srs_table = read_srs(srs_path)
-        ar_indices = srs_table['ID'] == 'I'
-        ars = srs_table[ar_indices]
-        if len(ars) > 0:
-            # TODO diffrot the coordinate the time of the SRS file or vice versa.
-            distance = np.sqrt((ars['Latitude'] - hgs_latitude)**2 + (ars['Longitude'] - hgs_longitude)**2)
-            min_distance_index = np.argmin(distance)
-            if distance[min_distance_index] <= 10 * u.deg:  # Arbitrary distance threshold
-                result = {
-                    'time': time,
-                    'hale_class': ars[min_distance_index]['Mag Type'],
-                    'mcintosh_class': ars[min_distance_index]['Z'],
-                    'hgs_latitude': hgs_latitude.to_value(u.deg),
-                    'hgs_longitude': hgs_longitude.to_value(u.deg)
-                }
-        return result
+    pos_hgs = SkyCoord(hgs_longitude * u.deg, hgs_latitude * u.deg,
+                       obstime=mag_map.date, frame='heliographic_stonyhurst')
+    pos_hpc = pos_hgs.transform_to(mag_map.coordinate_frame)
+    pos_pixels = mag_map.world_to_pixel(pos_hpc)
 
+    top_right = [(pos_pixels[0] + (size[0] - 1*u.pix) / 2).to_value(u.pix),
+                 (pos_pixels[1] + (size[1] - 1*u.pix) / 2).to_value(u.pix)]
+    bottom_left = [(pos_pixels[0] - (size[0] - 1*u.pix) / 2).to_value(u.pix),
+                   (pos_pixels[1] - (size[1] - 1*u.pix) / 2).to_value(u.pix)]
+    cutout = mag_map.submap(bottom_left*u.pix, top_right=top_right*u.pix)
 
-def detect_ars(time: datetime):
-    srs_file = download_srs(time)
+    cutout.data
+    # ML model heere
+    #ar_call = model.forward(cutout.dat)
 
-    srs_path = Path(srs_file[0])
-    if srs_path.exists():
-        detections = []
-        srs_table = read_srs(srs_path)
-        ar_indices = srs_table['ID'] == 'I'
-        ars = srs_table[ar_indices]
-        if len(ars) > 0:
-            for ar in ars:
-                center_lat = ar['Latitude']
-                center_lon = ar['Longitude']
-
-                bl_lat = (center_lat - 5*u.deg).to_value(u.deg)
-                bl_lon = (center_lon - 5*u.deg).to_value(u.deg)
-                tr_lat = (center_lat + 5*u.deg).to_value(u.deg)
-                tr_lon = (center_lon + 5*u.deg).to_value(u.deg)
-
-                detection = {'time': time,
-                             "bbox": {"bottom_left": {"latitude": bl_lat, "longitude": bl_lon},
-                                      "top_right": {"latitude": tr_lat, "longitude": tr_lon}},
-                             "hale_class": ar['Mag Type'], "mcintosh_class": ar['Z']}
-                detections.append(detection)
-
-        return detections
+    result = {
+        'time': time,
+        'hale_class': '',
+        'mcintosh_class': '',
+        'hgs_latitude': '',
+        'hgs_longitude': ''
+    }
+    return result
 
 
-class SRSNotFoundError(Exception):
+def detect(time: datetime):
+    r"""
+
+    """
+    mag_map = download_magnetogram(time)
+    mag_map.data
+    # ML model here
+
+    detections = []
+    detection = {'time': time,
+                 "bbox": {"bottom_left": {"latitude": "", "longitude": ""},
+                          "top_right": {"latitude": "", "longitude": ""}},
+                 "hale_class": "", "mcintosh_class": ""}
+    detections.append(detection)
+    return detections
+
+
+class MagNotFoundError(Exception):
     r"""No SRS file found"""
     pass
 
 
-class SRSDownloadError(Exception):
+class MagDownloadError(Exception):
     r"""Error downloading SRS file"""
     pass

@@ -2,7 +2,7 @@ from typing import List
 
 from fastapi import APIRouter, Depends
 
-from app.classify import classify, detect_ars
+from app.classify import classify, detect
 from app.schemas import *
 
 router = APIRouter()
@@ -35,7 +35,7 @@ async def full_disk_detection(detection_request: ARDetectionInput = Depends()) -
     r"""
     Detect and classify all ARs in a magnetogram at the given date as a URL parameter.
     """
-    detections = detect_ars(detection_request.time)
+    detections = detect(detection_request.time)
     detection_result = [ARDetection.model_validate(d) for d in detections]
     return detection_result
 
@@ -45,6 +45,6 @@ async def full_disk_detection(detection_request: ARDetectionInput) -> List[ARDet
     r"""
     Detect and classify all ARs in a magnetogram at the given date as  json data.
     """
-    detections = detect_ars(detection_request.time)
+    detections = detect(detection_request.time)
     detection_result = [ARDetection.model_validate(d) for d in detections]
     return detection_result
