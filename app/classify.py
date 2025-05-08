@@ -1,13 +1,14 @@
-from astropy.coordinates import SkyCoord
 from datetime import datetime, timedelta
 from pathlib import Path
 
 import astropy.units as u
 import numpy as np
+from astropy.coordinates import SkyCoord
 from astropy.time import Time
 from sunpy.map import Map
-
 from sunpy.net import Fido, attrs as a
+
+from app.hale_model import hale_classification
 
 CUTOUT =  [800, 400] * u.pix
 
@@ -68,16 +69,20 @@ def classify(time: datetime, hgs_latitude: float, hgs_longitude: float):
                    (pos_pixels[1] - (size[1] - 1*u.pix) / 2).to_value(u.pix)]
     cutout = mag_map.submap(bottom_left*u.pix, top_right=top_right*u.pix)
 
-    cutout.data
-    # ML model heere
-    #ar_call = model.forward(cutout.dat)
+    result = hale_classification(cutout.data)
+    hale_class = result['predicted_class']
+
+    if hale_class == 'QS' or hale_class == 'IA':
+        mcintosh_class = hale_class
+    else:
+        mcintosh_class = '' # TODO: implement McIntosh classification
 
     result = {
         'time': time,
-        'hale_class': '',
+        'hale_class': result['predicted_class'],
         'mcintosh_class': '',
-        'hgs_latitude': '',
-        'hgs_longitude': ''
+        'hgs_latitude': hgs_latitude,
+        'hgs_longitude': hgs_longitude
     }
     return result
 
