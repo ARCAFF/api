@@ -71,7 +71,7 @@ def classify(time: datetime, hgs_latitude: float, hgs_longitude: float):
 
     result = hale_classification(cutout.data)
     hale_class = result['predicted_class']
-
+    
     if hale_class == 'QS' or hale_class == 'IA':
         mcintosh_class = hale_class
     else:
@@ -80,7 +80,8 @@ def classify(time: datetime, hgs_latitude: float, hgs_longitude: float):
     result = {
         'time': time,
         'hale_class': result['predicted_class'],
-        'mcintosh_class': '',
+        'hale_probs': result['probabilities'],
+        'mcintosh_class': mcintosh_class,
         'hgs_latitude': hgs_latitude,
         'hgs_longitude': hgs_longitude
     }

@@ -16,6 +16,7 @@ class ARCutoutClassificationResult(BaseModel):
     hgs_latitude: float = Field(title="Heliographic Latitude", ge=-180, le=180, example=-70)
     hgs_longitude: float = Field(title='Heliographic Longitude', ge=-90, le=90, example=10)
     hale_class: str = Field(title='Hale Classification', example='alpha-beta')
+    hale_probs: str = Field(title='Hale Probabilities', example='[0.1, 0.2, 0.3, 0.4]')
     mcintosh_class: str = Field(title='McIntosh Classification', example='Fck')
 
 

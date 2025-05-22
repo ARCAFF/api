@@ -13,9 +13,6 @@ from arccnet.visualisation import utils as ut_v
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-CACHE_DIR = Path(".cache")
-CACHE_DIR.mkdir(parents=True, exist_ok=True)
-
 def download_model():
     """
     Downloads, extracts, and loads the Hale classification model.
@@ -24,11 +21,12 @@ def download_model():
         torch.nn.Module: The loaded PyTorch model in evaluation mode.
     """
     # Default Model
-    model_name = "resnet10t"  
+    model_name = "vit_small_patch16_224"  
     num_classes = 5  # qs, ia, a, b, bg
-    model_url = 'https://www.comet.com/api/registry/model/item/download?modelItemId=GaqwRfY1quruY6071biXR4gSD'
-
-    archive_path = CACHE_DIR / f"hale_model_archive.zip"
+    model_url = 'https://www.comet.com/api/registry/model/item/download?modelItemId=2Y3HZMoq3XXffVgzkL9wE9IZb'
+    CACHE_DIR = Path(".cache")
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    archive_path = CACHE_DIR / f"{model_name}_archive.zip"
     extracted_weights_filename = "model-data/comet-torch-model.pth"
     current_weights_path = CACHE_DIR / extracted_weights_filename
 
@@ -164,10 +162,13 @@ def hale_classification(cutout, model=None, device='cpu'):
     result = run_inference(model, cutout, device)
     probabilities = torch.softmax(torch.tensor(result), dim=1).numpy()
     predicted_class = np.argmax(result)
-    classes = ['QS', 'IA', 'Alpha', 'Beta', 'Beta-Gamma']
+    hale_classes = ['QS', 'IA', 'Alpha', 'Beta', 'Beta-Gamma']
+    hale_probs = ", ".join(
+        f"{cls}: {float(p):.4f}" for cls, p in zip(hale_classes, probabilities[0])
+    )
     result = {
-        'predicted_class': classes[predicted_class],
-        'probabilities': probabilities[0].tolist(),
+        'predicted_class': hale_classes[predicted_class],
+        'probabilities': hale_probs,
         'predicted_class_index': predicted_class
     }
     return result
