@@ -10,6 +10,7 @@ from sunpy.map import Map
 from sunpy.net import Fido
 from sunpy.net import attrs as a
 
+from app.fulldisk_model import yolo_detection
 from app.hale_model import hale_classification
 from app.mcintosh_encoders import decode_predicted_classes_to_original
 from app.mcintosh_model import mcintosh_classification
@@ -129,22 +130,25 @@ def classify(time: datetime, hgs_latitude: float, hgs_longitude: float):
 
 
 def detect(time: datetime):
-    r""" """
+    r"""
+    Detect and classify all active regions in a full-disk magnetogram.
+
+    Parameters
+    ----------
+    time : datetime.datetime
+        Date and time for detection
+
+    Returns
+    -------
+    list
+        List of detection results with bounding boxes and classifications
+    """
+    # Download magnetogram
     mag_map = download_magnetogram(time)
     mag_map.data
     # ML model here
 
-    detections = []
-    detection = {
-        "time": time,
-        "bbox": {
-            "bottom_left": {"latitude": "", "longitude": ""},
-            "top_right": {"latitude": "", "longitude": ""},
-        },
-        "hale_class": "",
-        "mcintosh_class": "",
-    }
-    detections.append(detection)
+    detections = yolo_detection(mag_map)
     return detections
 
 
