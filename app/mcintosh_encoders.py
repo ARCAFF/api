@@ -55,3 +55,46 @@ def create_encoders():
     }
 
     return encoders, mappings
+
+
+def decode_predicted_classes_to_original(z_class, p_class, c_class):
+    """
+    Convert predicted class names directly to original McIntosh classification with alternatives.
+
+    Args:
+        z_class: Predicted Z component class name (e.g., "LG")
+        p_class: Predicted P component class name (e.g., "asym")
+        c_class: Predicted C component class name (e.g., "frag")
+
+    Returns:
+        String representation showing original alternatives
+    """
+    # Reverse mappings to show original alternatives
+    z_reverse_mapping = {"A": "A", "B": "B", "C": "C", "H": "H", "LG": "D/E/F"}
+    p_reverse_mapping = {"asym": "a/k", "r": "r", "sym": "s/h", "x": "x"}
+    c_reverse_mapping = {"frag": "i/c", "o": "o", "x": "x"}
+
+    # Convert to original form representations
+    z_original = z_reverse_mapping.get(z_class, z_class)
+    p_original = p_reverse_mapping.get(p_class, p_class)
+    c_original = c_reverse_mapping.get(c_class, c_class)
+
+    return f"{z_original}-{p_original}-{c_original}"
+
+
+def decode_mcintosh_classification(predicted_classes_list, encoders=None):
+    """
+    Decode McIntosh classifications using predicted class names.
+
+    Args:
+        predicted_classes_list: List of tuples [(z_class, p_class, c_class), ...]
+        encoders: Not needed for this function, kept for compatibility
+
+    Returns:
+        List of decoded classification strings
+    """
+    results = []
+    for z_class, p_class, c_class in predicted_classes_list:
+        decoded = decode_predicted_classes_to_original(z_class, p_class, c_class)
+        results.append(decoded)
+    return results

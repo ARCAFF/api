@@ -11,6 +11,7 @@ from sunpy.net import Fido
 from sunpy.net import attrs as a
 
 from app.hale_model import hale_classification
+from app.mcintosh_encoders import decode_predicted_classes_to_original
 from app.mcintosh_model import mcintosh_classification
 
 CUTOUT = [800, 400] * u.pix
@@ -89,6 +90,7 @@ def classify(time: datetime, hgs_latitude: float, hgs_longitude: float):
     # Get McIntosh classification
     mcintosh_result = None
     mcintosh_components = None
+    mcintosh_class = None
 
     if hale_class == "QS" or hale_class == "IA":
         # For quiet sun or inactive regions, use Hale class
@@ -96,8 +98,21 @@ def classify(time: datetime, hgs_latitude: float, hgs_longitude: float):
     else:
         # For active regions, run McIntosh classification
         mcintosh_result = mcintosh_classification(cutout.data)
-        mcintosh_class = mcintosh_result["mcintosh_class"]
         mcintosh_components = mcintosh_result["components"]
+
+        # Get the predicted classes from components
+        z_predicted = mcintosh_components["z"]["predicted_class"]
+        p_predicted = mcintosh_components["p"]["predicted_class"]
+        c_predicted = mcintosh_components["c"]["predicted_class"]
+
+        # Decode to original forms
+        mcintosh_class = decode_predicted_classes_to_original(
+            z_predicted, p_predicted, c_predicted
+        )
+
+    # Ensure mcintosh_class is never None
+    if mcintosh_class is None:
+        mcintosh_class = "Unknown"
 
     # Prepare final result
     result = {
