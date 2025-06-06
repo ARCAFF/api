@@ -115,7 +115,6 @@ def classify(time: datetime, hgs_latitude: float, hgs_longitude: float):
     if mcintosh_class is None:
         mcintosh_class = "Unknown"
 
-    # Prepare final result
     result = {
         "time": time,
         "hale_class": hale_result["predicted_class"],
@@ -145,9 +144,6 @@ def detect(time: datetime):
     """
     # Download magnetogram
     mag_map = download_magnetogram(time)
-    mag_map.data
-    # ML model here
-
     detections = yolo_detection(mag_map)
     return detections
 

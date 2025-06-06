@@ -4,7 +4,10 @@ from pathlib import Path
 import astropy.units as u
 import numpy as np
 import torch
+from arccnet.visualisation import utils as ut_v
 from astropy.coordinates import SkyCoord
+from PIL import Image
+from sunpy.coordinates import SphericalScreen
 from ultralytics import YOLO
 
 from app.model_utils import (
@@ -37,203 +40,153 @@ def download_yolo_model():
         raise
 
 
-def pixel_to_hgs_coords(mag_map, pixel_coords):
-    """
-    Convert pixel coordinates to heliographic Stonyhurst coordinates.
-
-    Parameters
-    ----------
-    mag_map : sunpy.map.Map
-        The magnetogram map
-    pixel_coords : tuple
-        Pixel coordinates (x, y)
-
-    Returns
-    -------
-    dict
-        Dictionary with latitude and longitude in degrees
-    """
-    try:
-        from sunpy.coordinates import SphericalScreen
-
-        # Get world coordinates
-        world_coord = mag_map.pixel_to_world(
-            pixel_coords[0] * u.pix, pixel_coords[1] * u.pix
-        )
-
-        # Define the center of the solar disk as the observer's position
-        observer = mag_map.observer_coordinate
-
-        # Check if the coordinate is on the solar disk
-        solar_radius = mag_map.rsun_obs
-        distance_from_center = np.sqrt(world_coord.Tx**2 + world_coord.Ty**2)
-
-        if distance_from_center > solar_radius:
-            logger.warning(
-                f"Coordinates {pixel_coords} are off-disk, using SphericalScreen assumption"
-            )
-
-        # Use SphericalScreen context manager with the observer as center
-        with SphericalScreen(center=observer):
-            # Transform to heliographic Stonyhurst
-            hgs_coord = world_coord.transform_to("heliographic_stonyhurst")
-
-            # Get latitude and longitude values
-            lat = float(hgs_coord.lat.to(u.deg).value)
-            lon = float(hgs_coord.lon.to(u.deg).value)
-
-            # Ensure coordinates are within valid ranges expected by ARDetection model
-            # Clamp latitude between -90 and 90
-            lat = max(-90.0, min(90.0, lat))
-
-            # Clamp longitude between -90 and 90
-            lon = max(-90.0, min(90.0, lon))
-
-            return {
-                "latitude": lat,
-                "longitude": lon,
-            }
-    except Exception as e:
-        logger.warning(f"Failed to convert pixel coordinates {pixel_coords}: {e}")
-        # Return valid default values instead of NaN to avoid validation errors
-        return {"latitude": 0.0, "longitude": 0.0}
-
-
 def preprocess_magnetogram(mag_map, target_size=1024):
     """
-    Preprocess magnetogram for YOLO inference.
+    Preprocess a full-disk magnetogram for YOLO-based active region detection.
+
+    This function performs several preprocessing steps on the provided magnetogram:
+      1. Converts any invalid data (NaN) to zero.
+      2. Applies a hardtanh transformation to constrain data values.
+      3. Normalizes the data to the range [0, 255] and converts it to 8-bit unsigned integers.
+      4. Resizes the image to the target dimensions for YOLO input.
+      5. Vertically flips the resized image for correct orientation.
+      6. Saves the processed image to a local cache directory for reuse.
 
     Parameters
     ----------
     mag_map : sunpy.map.Map
-        The magnetogram map
-    target_size : int
-        Target size for YOLO input (default: 1024)
+        The magnetogram map to preprocess.
+    target_size : int, optional
+        The width and height (in pixels) of the output image. Default is 1024.
 
     Returns
     -------
     numpy.ndarray
-        Preprocessed magnetogram data
+        The preprocessed magnetogram data array.
     """
     try:
-        # Get the data
         data = mag_map.data
 
-        # Handle NaN values
         data = np.nan_to_num(data, nan=0.0)
+        data = ut_v.hardtanh_transform_npy(data)
 
-        # Normalize to 0-255 range for YOLO
-        data_min, data_max = np.percentile(data, [1, 99])
-        data = np.clip((data - data_min) / (data_max - data_min) * 255, 0, 255).astype(
-            np.uint8
-        )
+        data = (data - np.min(data)) / (np.max(data) - np.min(data))
+        data = (data * 255).astype(np.uint8)
 
-        # Convert to RGB (duplicate channels for YOLO)
-        if len(data.shape) == 2:
-            data = np.stack([data, data, data], axis=-1)
+        savedir = Path(".cache")
+        savedir.mkdir(parents=True, exist_ok=True)
+        save_path = savedir / "prepr_mag.png"
 
-        return data
+        img = Image.fromarray(data)
+        img_resized = img.resize((target_size, target_size))
+        img_flip = img_resized.transpose(Image.FLIP_TOP_BOTTOM)
+        img_flip.save(save_path)
+
+        return save_path
 
     except Exception as e:
         logger.error(f"Error preprocessing magnetogram: {e}")
         raise
 
 
-def yolo_detection(mag_map, model=None, confidence_threshold=0.6):
+def yolo_detection(
+    mag_map,
+    model=None,
+    confidence_threshold=0.5,
+):
     """
-    Run YOLO detection on a full-disk magnetogram to find active regions.
+    Perform YOLO detection on a full-disk magnetogram.
+
+    This function uses a YOLO model to detect active regions in the provided magnetogram.
+    The processing steps include:
+      1. Preprocessing the magnetogram with `preprocess_magnetogram` to match the YOLO input size.
+      2. Running the YOLO model to obtain detection results.
+      3. Extracting bounding box coordinates, confidence scores, and class labels.
+      4. Scaling the bounding box coordinates from the resized image back to the original image dimensions.
+      5. Converting the pixel coordinates into heliographic coordinates using a World Coordinate System (WCS) transformation.
+
+    Parameters
+    ----------
+    mag_map : sunpy.map.Map
+        The full-disk magnetogram map on which to perform region detection.
+    model : YOLO, optional
+        A preloaded YOLO model. If None, the model is automatically downloaded and loaded.
+    confidence_threshold : float, optional
+        Minimum confidence threshold for detections. (Default is 0.6)
+
+    Returns
+    -------
+    list
+        A list of detection dictionaries. Each dictionary contains:
+            - time: the observation time of the magnetogram.
+            - bbox: a dictionary with 'bottom_left' and 'top_right' heliographic coordinates (latitude and longitude).
+            - hale_class: the detected active region's class label.
+            - confidence: the detection confidence score.
     """
     if model is None:
         model = download_yolo_model()
 
-    try:
-        processed_data = preprocess_magnetogram(mag_map)
-        results = model(processed_data, conf=confidence_threshold, verbose=False)
+    img_path = preprocess_magnetogram(mag_map.data)
+    results = model.predict(img_path, conf=confidence_threshold)
+    bboxes = results[0].boxes
+    boxes = bboxes.xyxy.cpu().numpy()
+    confidences = bboxes.conf.cpu().numpy()
+    class_names = [results[0].names.get(int(cls)) for cls in bboxes.cls]
 
-        # Log YOLO inference results
-        logger.info(
-            f"YOLO inference completed. Number of result objects: {len(results)}"
+    original_dims = mag_map.dimensions
+    original_width = original_dims.x.value
+    original_height = original_dims.y.value
+
+    resized_width = 1024
+    resized_height = 1024
+
+    scale_x = original_width / resized_width
+    scale_y = original_height / resized_height
+
+    detections = []
+    for j, (box, conf) in enumerate(zip(boxes, confidences)):
+        x1_resized, y1_resized, x2_resized, y2_resized = box
+
+        x1_original = x1_resized * scale_x
+        x2_original = x2_resized * scale_x
+
+        # Invert the Y-coordinate from top-left to bottom-left origin
+        y1_original = original_height - (y2_resized * scale_y)
+        y2_original = original_height - (y1_resized * scale_y)
+
+        # Perform WCS Conversion
+        bottom_left_world = mag_map.pixel_to_world(
+            x1_original * u.pix, y1_original * u.pix
+        )
+        top_right_world = mag_map.pixel_to_world(
+            x2_original * u.pix, y2_original * u.pix
         )
 
-        detections = []
-        on_disk_count = 0
-        off_disk_count = 0
-
-        for i, result in enumerate(results):
-            if result.boxes is not None:
-                boxes = result.boxes.xyxy.cpu().numpy()
-                confidences = result.boxes.conf.cpu().numpy()
-
-                logger.info(f"Result {i}: Found {len(boxes)} boxes")
-
-                for j, (box, conf) in enumerate(zip(boxes, confidences)):
-                    x1, y1, x2, y2 = box
-
-                    # Check if detection center is on the solar disk
-                    center_x = (x1 + x2) / 2
-                    center_y = (y1 + y2) / 2
-
-                    # Convert center to world coordinates to check if on disk
-                    try:
-                        world_coord = mag_map.pixel_to_world(
-                            center_x * u.pix, center_y * u.pix
-                        )
-                        solar_radius = mag_map.rsun_obs
-                        distance_from_center = np.sqrt(
-                            world_coord.Tx**2 + world_coord.Ty**2
-                        )
-
-                        if distance_from_center > solar_radius:
-                            off_disk_count += 1
-                            logger.debug(
-                                f"Skipping off-disk detection at ({center_x:.1f}, {center_y:.1f})"
-                            )
-                            continue  # Skip off-disk detections
-
-                        on_disk_count += 1
-
-                    except Exception as e:
-                        logger.warning(
-                            f"Could not check disk position for detection at ({center_x:.1f}, {center_y:.1f}): {e}"
-                        )
-                        continue
-
-                    # Convert pixel coordinates to HGS coordinates
-                    bottom_left_hgs = pixel_to_hgs_coords(mag_map, (x1, y1))
-                    top_right_hgs = pixel_to_hgs_coords(mag_map, (x2, y2))
-                    center_hgs = pixel_to_hgs_coords(mag_map, (center_x, center_y))
-
-                    hale_class = ""
-                    mcintosh_class = ""
-
-                    detection = {
-                        "time": mag_map.date.datetime,
-                        "bbox": {
-                            "bottom_left": {
-                                "latitude": bottom_left_hgs["latitude"],
-                                "longitude": bottom_left_hgs["longitude"],
-                            },
-                            "top_right": {
-                                "latitude": top_right_hgs["latitude"],
-                                "longitude": top_right_hgs["longitude"],
-                            },
-                        },
-                        "hale_class": hale_class,
-                        "mcintosh_class": mcintosh_class,
-                        "confidence": float(conf),
-                        "bbox_pixels": {
-                            "bottom_left": {"x": float(x1), "y": float(y1)},
-                            "top_right": {"x": float(x2), "y": float(y2)},
-                        },
-                    }
-
-                    detections.append(detection)
-
-        logger.info(
-            f"YOLO detection complete. On-disk: {on_disk_count}, Off-disk (filtered): {off_disk_count}, Final detections: {len(detections)}"
+        # Transform from the native system (Helioprojective) to Heliographic
+        bottom_left_hgs_coord = bottom_left_world.transform_to(
+            "heliographic_stonyhurst"
         )
-        return detections
+        top_right_hgs_coord = top_right_world.transform_to("heliographic_stonyhurst")
 
-    except Exception as e:
-        logger.error(f"Error during YOLO detection: {e}")
-        raise
+        bottom_left_hgs = {
+            "latitude": bottom_left_hgs_coord.lat.to_value(u.deg),
+            "longitude": bottom_left_hgs_coord.lon.to_value(u.deg),
+        }
+        top_right_hgs = {
+            "latitude": top_right_hgs_coord.lat.to_value(u.deg),
+            "longitude": top_right_hgs_coord.lon.to_value(u.deg),
+        }
+
+        hale_class = class_names[j]
+
+        detection = {
+            "time": mag_map.date.datetime,
+            "bbox": {
+                "bottom_left": bottom_left_hgs,
+                "top_right": top_right_hgs,
+            },
+            "hale_class": hale_class,
+            "confidence": float(conf),
+        }
+        detections.append(detection)
+    return detections

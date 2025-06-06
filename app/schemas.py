@@ -99,4 +99,4 @@ class ARDetection(BaseModel):
     )
     bbox: BoundingBox
     hale_class: str = Field(title="Hale Classification", example="Beta")
-    mcintosh_class: str = Field(title="McIntosh Classification", example="Bxo")
+    confidence: float = Field(title="Confidence", example="0.90")
