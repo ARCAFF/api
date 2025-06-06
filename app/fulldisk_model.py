@@ -24,7 +24,6 @@ def download_yolo_model():
     """
     model_url = "https://www.comet.com/api/registry/model/item/download?modelItemId=9iPvriGnFaFjE6dNzGYYYZoEG"
 
-    # Specify the correct filename for YOLO models
     weights_path = download_and_extract_model(model_url, "yolo_detection", "best.pt")
 
     try:
