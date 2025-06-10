@@ -1,4 +1,5 @@
 import logging
+import os
 import zipfile
 from pathlib import Path
 
@@ -14,6 +15,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+MODEL_PATH = os.getenv('MODEL_PATH')
 
 def download_and_extract_model(
     model_url, model_name, extracted_weights_filename="model-data/comet-torch-model.pth"
@@ -35,7 +37,7 @@ def download_and_extract_model(
     Path
         Path to the extracted weights file
     """
-    CACHE_DIR = Path(".cache")
+    CACHE_DIR = Path(MODEL_PATH)
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
     model_cache_dir = CACHE_DIR / model_name

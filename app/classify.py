@@ -1,3 +1,4 @@
+import os
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -16,6 +17,7 @@ from app.mcintosh_encoders import decode_predicted_classes_to_original
 from app.mcintosh_model import mcintosh_classification
 
 CUTOUT = [800, 400] * u.pix
+DATA_PATH = os.getevn('DATA_PATH')
 
 
 def download_magnetogram(time):
@@ -34,7 +36,7 @@ def download_magnetogram(time):
     )
     if not query:
         raise MagNotFoundError()
-    files = Fido.fetch(query["vso"][0])
+    files = Fido.fetch(query["vso"][0], path=DATA_PATH)
     if not files:
         raise MagDownloadError()
     mag_map = Map(files[0])
