@@ -9,6 +9,7 @@ on:
       - '!*post*'
   pull_request:
   # Allow manual runs through the web UI
+  workflow_dispatch:
 
 jobs:
   build:
