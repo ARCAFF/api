@@ -18,4 +18,4 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag ARCAFF-api:${GITHUB_REF_NAME#v}
+      run: docker build . --file Dockerfile --tag arcaff-api:${GITHUB_REF_NAME#v}
