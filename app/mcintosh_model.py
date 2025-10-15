@@ -1,22 +1,13 @@
-import logging
-import zipfile
-from pathlib import Path
-
-import numpy as np
-import requests
 import torch
 import torch.nn as nn
-
-from app.mcintosh_encoders import c_classes, create_encoders, p_classes, z_classes
-from app.model_utils import (
-    download_and_extract_model,
-    load_state_dict,
-    logger,
-    preprocess_data,
-    safe_inference,
-)
 from arccnet.models import train_utils as ut_t
 from arccnet.models.cutouts.mcintosh.models import HierarchicalResNet
+
+from app.config import settings
+from app.mcintosh_encoders import (c_classes, create_encoders, p_classes,
+                                   z_classes)
+from app.model_utils import (download_and_extract_model, load_state_dict,
+                             logger, preprocess_data, safe_inference)
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model_name = "resnet18"
@@ -31,7 +22,11 @@ def download_model():
     """
     model_url = "https://www.comet.com/api/registry/model/item/download?modelItemId=ZkTcrrYWpJwlQ3Kmlp6GCJGiK"
 
-    weights_path = download_and_extract_model(model_url, f"{model_name}_mcintosh")
+    weights_path = download_and_extract_model(
+        model_url,
+        f"{model_name}_mcintosh",
+        model_data_path=settings.model_path,
+    )
     state_dict = load_state_dict(weights_path, device)
 
     # Load and create model

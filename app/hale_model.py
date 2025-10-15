@@ -1,15 +1,11 @@
 import numpy as np
 import timm
 import torch
-
-from app.model_utils import (
-    download_and_extract_model,
-    load_state_dict,
-    logger,
-    preprocess_data,
-    safe_inference,
-)
 from arccnet.models import train_utils as ut_t
+
+from app.config import settings
+from app.model_utils import (download_and_extract_model, load_state_dict,
+                             logger, preprocess_data, safe_inference)
 
 
 def download_model():
@@ -23,7 +19,9 @@ def download_model():
     num_classes = 5  # qs, ia, a, b, bg
     model_url = "https://www.comet.com/api/registry/model/item/download?modelItemId=2Y3HZMoq3XXffVgzkL9wE9IZb"
 
-    weights_path = download_and_extract_model(model_url, model_name)
+    weights_path = download_and_extract_model(
+        model_url, model_name, model_data_path=settings.model_path
+    )
     state_dict = load_state_dict(weights_path)
 
     # Load and create model

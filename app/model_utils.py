@@ -1,12 +1,9 @@
 import logging
-import os
 import zipfile
-from pathlib import Path
 
 import numpy as np
 import requests
 import torch
-
 from arccnet.visualisation import utils as ut_v
 
 # Configure logging
@@ -15,10 +12,13 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-MODEL_PATH = os.getenv('MODEL_PATH')
 
 def download_and_extract_model(
-    model_url, model_name, extracted_weights_filename="model-data/comet-torch-model.pth"
+    model_url,
+    model_name,
+    *,
+    extracted_weights_filename="model-data/comet-torch-model.pth",
+    model_data_path,
 ):
     """
     Downloads and extracts a model archive.
@@ -31,16 +31,18 @@ def download_and_extract_model(
         Name of the model for cache naming
     extracted_weights_filename : str
         Expected filename of the weights in the archive
+    model_data_path : Path
+        Path to the model data directory
 
     Returns
     -------
     Path
         Path to the extracted weights file
     """
-    CACHE_DIR = Path(MODEL_PATH)
-    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    model_data = model_data_path
+    model_data.mkdir(parents=True, exist_ok=True)
 
-    model_cache_dir = CACHE_DIR / model_name
+    model_cache_dir = model_data / model_name
     model_cache_dir.mkdir(parents=True, exist_ok=True)
 
     archive_path = model_cache_dir / f"{model_name}_archive.zip"
@@ -83,10 +85,7 @@ def download_and_extract_model(
             # If extracted file has different name, create expected path
             actual_extracted_path = model_cache_dir / target_file
             if actual_extracted_path != extracted_path:
-                # Copy/move to expected location
-                import shutil
-
-                shutil.move(str(actual_extracted_path), str(extracted_path))
+                actual_extracted_path.move(extracted_path)
 
     if not extracted_path.exists():
         raise FileNotFoundError(f"Weights file not found at {extracted_path}")

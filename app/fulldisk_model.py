@@ -1,19 +1,14 @@
-import logging
 from pathlib import Path
 
 import astropy.units as u
 import numpy as np
 import torch
 from arccnet.visualisation import utils as ut_v
-from astropy.coordinates import SkyCoord
 from PIL import Image
-from sunpy.coordinates import SphericalScreen
 from ultralytics import YOLO
 
-from app.model_utils import (
-    download_and_extract_model,
-    logger,
-)
+from app.config import settings
+from app.model_utils import download_and_extract_model, logger
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -24,7 +19,12 @@ def download_yolo_model():
     """
     model_url = "https://www.comet.com/api/registry/model/item/download?modelItemId=9iPvriGnFaFjE6dNzGYYYZoEG"
 
-    weights_path = download_and_extract_model(model_url, "yolo_detection", "best.pt")
+    weights_path = download_and_extract_model(
+        model_url,
+        "yolo_detection",
+        extracted_weights_filename="best.pt",
+        model_data_path=settings.model_path,
+    )
 
     try:
         # Load YOLO model with downloaded weights

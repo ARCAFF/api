@@ -1,32 +1,30 @@
-import os
 from datetime import datetime, timedelta
-from pathlib import Path
 
 import astropy.units as u
-import numpy as np
-import torch
 from astropy.coordinates import SkyCoord
-from astropy.time import Time
 from sunpy.map import Map
 from sunpy.net import Fido
 from sunpy.net import attrs as a
 
+from app.config import settings
 from app.fulldisk_model import yolo_detection
 from app.hale_model import hale_classification
 from app.mcintosh_encoders import decode_predicted_classes_to_original
 from app.mcintosh_model import mcintosh_classification
 
 CUTOUT = [800, 400] * u.pix
-DATA_PATH = os.getevn('DATA_PATH')
 
 
-def download_magnetogram(time):
+def download_magnetogram(time, download_path):
     r"""
     Download magnetogram and prepare for use
 
     Parameters
     ----------
     time : datetime.datetime
+        Time to search for closest magnetogram
+    download_path : Path
+        Path to datadownload directory
 
     """
     query = Fido.search(
@@ -36,7 +34,7 @@ def download_magnetogram(time):
     )
     if not query:
         raise MagNotFoundError()
-    files = Fido.fetch(query["vso"][0], path=DATA_PATH)
+    files = Fido.fetch(query["vso"][0], path=download_path)
     if not files:
         raise MagDownloadError()
     mag_map = Map(files[0])
@@ -61,7 +59,7 @@ def classify(time: datetime, hgs_latitude: float, hgs_longitude: float):
     Classification result
 
     """
-    mag_map = download_magnetogram(time)
+    mag_map = download_magnetogram(time, settings.data_path)
     if "hmi" in mag_map.detector.casefold():
         size = CUTOUT
     else:
@@ -145,7 +143,7 @@ def detect(time: datetime):
         List of detection results with bounding boxes and classifications
     """
     # Download magnetogram
-    mag_map = download_magnetogram(time)
+    mag_map = download_magnetogram(time, settings.data_path)
     detections = yolo_detection(mag_map)
     return detections
 

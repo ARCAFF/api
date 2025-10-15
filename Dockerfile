@@ -1,4 +1,4 @@
-FROM python:3.11
+FROM python:3.11-bookworm
 
 WORKDIR /code
 
@@ -6,8 +6,8 @@ WORKDIR /code
 RUN apt-get update && apt-get install -y \
     libgl1-mesa-glx \
     libglib2.0-0 \
-    git \
-    && rm -rf /var/lib/apt/lists/*
+    git
+RUN rm -rf /var/lib/apt/lists/*
 
 
 # Set environment variables
