@@ -42,7 +42,7 @@ jobs:
   publish:
     name: Publish Docker image to GHCR
     needs: build
-    if: github.event_name == 'release' && github.event.release.published == true
+    if: github.event_name == 'release'
     runs-on: ubuntu-latest
     permissions:
       contents: read
