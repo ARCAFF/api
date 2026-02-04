@@ -43,13 +43,13 @@ app = FastAPI(
         "name": "ARCAFF",
         "url": "http://www.arcaff.eu",
     },
-    openapi_tags=tags_metadata
+    openapi_tags=tags_metadata,
 )
 
-app.include_router(router, prefix='')
+app.include_router(router, prefix="")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins='*',
+    allow_origins="*",
     allow_credentials=True,
     allow_methods=["get", "post", "options"],
     allow_headers=["*"],

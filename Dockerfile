@@ -1,4 +1,4 @@
-FROM python:3.11
+FROM python:3.11-bookworm
 
 WORKDIR /code
 
@@ -9,16 +9,20 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-
 # Set environment variables
-ENV OPENCV_IO_ENABLE_OPENEXR=0
-ENV QT_QPA_PLATFORM=offscreen
-ENV PYTHONUNBUFFERED=1
+ENV OPENCV_IO_ENABLE_OPENEXR=0 \
+    QT_QPA_PLATFORM=offscreen \
+    PYTHONUNBUFFERED=1
 
-COPY ./requirements.txt /code/requirements.txt
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -r requirements.txt
 
 RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
 
 COPY ./app /code/app
+
+EXPOSE 80
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "80"]

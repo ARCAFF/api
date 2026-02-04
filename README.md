@@ -23,8 +23,9 @@
 
 `docker run -p 8000:80 arcaff-api:0.1.0`
 
+## Configuration
 
-
+By default, the data and model files are stored in `/arccnet/data` and `/arccnet/models`. You can override these locations by setting the `DATAPATH` and/or `MODELSPATH` environment variables. Additionally, these directories can be mounted to the host file system, for example: `-v /host/path:/arccnet/data`
 
 
 # Test

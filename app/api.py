@@ -8,30 +8,42 @@ from app.schemas import *
 router = APIRouter()
 
 
-@router.get("/arcnet/classify_cutout/", tags=['AR Cutout Classification'])
-async def classify_cutout(classification_request: ARCutoutClassificationInput = Depends()) -> ARCutoutClassificationResult:
+@router.get("/arcnet/classify_cutout/", tags=["AR Cutout Classification"])
+async def classify_cutout(
+    classification_request: ARCutoutClassificationInput = Depends(),
+) -> ARCutoutClassificationResult:
     r"""
     Classify a cutout generated from a magnetogram at the given date and location as URL parameters.
     """
-    classification = classify(time=classification_request.time, hgs_latitude=classification_request.hgs_latitude,
-                              hgs_longitude=classification_request.hgs_longitude)
+    classification = classify(
+        time=classification_request.time,
+        hgs_latitude=classification_request.hgs_latitude,
+        hgs_longitude=classification_request.hgs_longitude,
+    )
     classification_result = ARCutoutClassificationResult.model_validate(classification)
     return classification_result
 
 
-@router.post("/arcnet/classify_cutout/", tags=['AR Cutout Classification'])
-async def classify_cutout(classification_request: ARCutoutClassificationInput) -> ARCutoutClassificationResult:
+@router.post("/arcnet/classify_cutout/", tags=["AR Cutout Classification"])
+async def classify_cutout(
+    classification_request: ARCutoutClassificationInput,
+) -> ARCutoutClassificationResult:
     r"""
     Classify an AR cutout generated from a magnetogram at the given date and location as json data.
     """
-    classification = classify(time=classification_request.time, hgs_latitude=classification_request.hgs_latitude,
-                              hgs_longitude=classification_request.hgs_longitude)
+    classification = classify(
+        time=classification_request.time,
+        hgs_latitude=classification_request.hgs_latitude,
+        hgs_longitude=classification_request.hgs_longitude,
+    )
     classification_result = ARCutoutClassificationResult.model_validate(classification)
     return classification_result
 
 
-@router.get("/arcnet/full_disk_detection", tags=['Full disk AR Detection'])
-async def full_disk_detection(detection_request: ARDetectionInput = Depends()) -> List[ARDetection]:
+@router.get("/arcnet/full_disk_detection", tags=["Full disk AR Detection"])
+async def full_disk_detection(
+    detection_request: ARDetectionInput = Depends(),
+) -> List[ARDetection]:
     r"""
     Detect and classify all ARs in a magnetogram at the given date as a URL parameter.
     """
@@ -40,7 +52,7 @@ async def full_disk_detection(detection_request: ARDetectionInput = Depends()) -
     return detection_result
 
 
-@router.post("/arcnet/full_disk_detection", tags=['Full disk AR Detection'])
+@router.post("/arcnet/full_disk_detection", tags=["Full disk AR Detection"])
 async def full_disk_detection(detection_request: ARDetectionInput) -> List[ARDetection]:
     r"""
     Detect and classify all ARs in a magnetogram at the given date as  json data.
