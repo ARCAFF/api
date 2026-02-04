@@ -25,7 +25,7 @@
 
 ## Configuration
 
-By default the model and data files will be store at `/arcnet/data` and `/arccnet/models`. These locations can be overridden by setting the `DATAPATH` and, or `MODESLPATH` environment variables. Additionally thes can be mount to host file system e.g. `-v /host/path:/arccnet/data`
+By default, the data and model files are stored in `/arccnet/data` and `/arccnet/models`. You can override these locations by setting the `DATAPATH` and/or `MODELSPATH` environment variables. Additionally, these directories can be mounted to the host file system, for example: `-v /host/path:/arccnet/data`
 
 
 # Test
