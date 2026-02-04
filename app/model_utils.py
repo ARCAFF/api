@@ -17,8 +17,8 @@ def download_and_extract_model(
     model_url,
     model_name,
     *,
-    extracted_weights_filename="model-data/comet-torch-model.pth",
     model_data_path,
+    extracted_weights_filename="model-data/comet-torch-model.pth",
 ):
     """
     Downloads and extracts a model archive.
@@ -85,7 +85,7 @@ def download_and_extract_model(
             # If extracted file has different name, create expected path
             actual_extracted_path = model_cache_dir / target_file
             if actual_extracted_path != extracted_path:
-                actual_extracted_path.move(extracted_path)
+                actual_extracted_path.replace(extracted_path)
 
     if not extracted_path.exists():
         raise FileNotFoundError(f"Weights file not found at {extracted_path}")
