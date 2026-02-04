@@ -20,7 +20,7 @@ def download_model():
     model_url = "https://www.comet.com/api/registry/model/item/download?modelItemId=2Y3HZMoq3XXffVgzkL9wE9IZb"
 
     weights_path = download_and_extract_model(
-        model_url, model_name, model_data_path=settings.model_path
+        model_url, model_name, model_data_path=settings.models_path
     )
     state_dict = load_state_dict(weights_path)
 

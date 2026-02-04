@@ -23,7 +23,7 @@ def download_yolo_model():
         model_url,
         "yolo_detection",
         extracted_weights_filename="best.pt",
-        model_data_path=settings.model_path,
+        model_data_path=settings.models_path,
     )
 
     try:
