@@ -3,6 +3,7 @@ from typing import List
 from fastapi import APIRouter, Depends
 
 from app.classify import classify, detect
+from app.forecast import daily_flare_forecast
 from app.schemas import *
 
 router = APIRouter()
@@ -60,3 +61,12 @@ async def full_disk_detection(detection_request: ARDetectionInput) -> List[ARDet
     detections = detect(detection_request.time)
     detection_result = [ARDetection.model_validate(d) for d in detections]
     return detection_result
+
+@router.post("/arcnet/full_disk_detection", tags=["Full disk AR Detection"])
+async def flare_forecast(detection_request: ARDetectionInput) -> List[ARDetection]:
+    r"""
+    Flare forecast for next 24 hours
+    """
+    forecast = daily_flare_forecast(detection_request.time)
+    return forecast
+

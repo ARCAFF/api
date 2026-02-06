@@ -1,8 +1,8 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
 from fastapi import Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class ARCutoutClassificationInput(BaseModel):
@@ -100,3 +100,36 @@ class ARDetection(BaseModel):
     bbox: BoundingBox
     hale_class: str = Field(title="Hale Classification", example="Beta")
     confidence: float = Field(title="Confidence", example="0.90")
+
+
+class DailyFlareForecast(BaseModel):
+    timestamp: datetime = Field(
+        ..., description="Forecast timestamp (UTC)"
+    )
+    c: float = Field(
+        ..., ge=0.0, le=1.0, description="C-class flare probability"
+    )
+    m: float = Field(
+        ..., ge=0.0, le=1.0, description="M-class flare probability"
+    )
+    x: float = Field(
+        ..., ge=0.0, le=1.0, description="X-class flare probability"
+    )
+
+    @model_validator(mode="after")
+    def check_flare_hierarchy(self):
+        if not (self.x <= self.m <= self.c):
+            raise ValueError(
+                "Flare probabilities must satisfy: x ≤ m ≤ c"
+            )
+        return self
+
+class ActiveRegionForecast(BaseModel):
+    noaa: int = Field(
+        ..., gt=0, description="Positive NOAA active region number"
+    )
+    forecasts: List[DailyFlareForecast]
+
+
+class FlareForecast(BaseModel):
+    ars: List[ActiveRegionForecast]
