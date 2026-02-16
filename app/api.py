@@ -4,9 +4,13 @@ from fastapi import APIRouter, Depends
 
 from app.classify import classify, detect
 from app.forecast import daily_flare_forecast
-from app.schemas import (ARCutoutClassificationInput,
-                         ARCutoutClassificationResult, ARDetection,
-                         ARDetectionInput, FlareForecast)
+from app.schemas import (
+    ARCutoutClassificationInput,
+    ARCutoutClassificationResult,
+    ARDetection,
+    ARDetectionInput,
+    FlareForecast,
+)
 
 classificaiton_router = APIRouter()
 forecast_router = APIRouter()
