@@ -1,8 +1,22 @@
 from datetime import datetime
-from typing import Optional, List
+from typing import List, Optional
 
 from fastapi import Query
 from pydantic import BaseModel, Field, model_validator
+
+__all__ = [
+    "ARCutoutClassificationInput",
+    "McIntoshComponent",
+    "McIntoshComponents",
+    "ARCutoutClassificationResult",
+    "ARDetectionInput",
+    "HeliographicStonyhurstCoordinate",
+    "BoundingBox",
+    "ARDetection",
+    "FlareForecast",
+    "DailyFlareForecast",
+    "ActiveRegionForecast",
+]
 
 
 class ARCutoutClassificationInput(BaseModel):
@@ -103,31 +117,20 @@ class ARDetection(BaseModel):
 
 
 class DailyFlareForecast(BaseModel):
-    timestamp: datetime = Field(
-        ..., description="Forecast timestamp (UTC)"
-    )
-    c: float = Field(
-        ..., ge=0.0, le=1.0, description="C-class flare probability"
-    )
-    m: float = Field(
-        ..., ge=0.0, le=1.0, description="M-class flare probability"
-    )
-    x: float = Field(
-        ..., ge=0.0, le=1.0, description="X-class flare probability"
-    )
+    noaa: int = Field(..., gt=0, description="Positive NOAA active region number")
+    c: float = Field(..., ge=0.0, le=1.0, description="C-class flare probability")
+    m: float = Field(..., ge=0.0, le=1.0, description="M-class flare probability")
+    x: float = Field(..., ge=0.0, le=1.0, description="X-class flare probability")
 
     @model_validator(mode="after")
     def check_flare_hierarchy(self):
         if not (self.x <= self.m <= self.c):
-            raise ValueError(
-                "Flare probabilities must satisfy: x ≤ m ≤ c"
-            )
+            raise ValueError("Flare probabilities must satisfy: x ≤ m ≤ c")
         return self
 
+
 class ActiveRegionForecast(BaseModel):
-    noaa: int = Field(
-        ..., gt=0, description="Positive NOAA active region number"
-    )
+    timestamp: datetime = Field(..., description="Forecast timestamp (UTC)")
     forecasts: List[DailyFlareForecast]
 
 

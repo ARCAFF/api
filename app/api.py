@@ -4,28 +4,17 @@ from fastapi import APIRouter, Depends
 
 from app.classify import classify, detect
 from app.forecast import daily_flare_forecast
-from app.schemas import *
+from app.schemas import (ARCutoutClassificationInput,
+                         ARCutoutClassificationResult, ARDetection,
+                         ARDetectionInput, FlareForecast)
 
-router = APIRouter()
-
-
-@router.get("/arcnet/classify_cutout/", tags=["AR Cutout Classification"])
-async def classify_cutout(
-    classification_request: ARCutoutClassificationInput = Depends(),
-) -> ARCutoutClassificationResult:
-    r"""
-    Classify a cutout generated from a magnetogram at the given date and location as URL parameters.
-    """
-    classification = classify(
-        time=classification_request.time,
-        hgs_latitude=classification_request.hgs_latitude,
-        hgs_longitude=classification_request.hgs_longitude,
-    )
-    classification_result = ARCutoutClassificationResult.model_validate(classification)
-    return classification_result
+classificaiton_router = APIRouter()
+forecast_router = APIRouter()
 
 
-@router.post("/arcnet/classify_cutout/", tags=["AR Cutout Classification"])
+@classificaiton_router.post(
+    "/arcnet/classify_cutout/", tags=["AR Cutout Classification"]
+)
 async def classify_cutout(
     classification_request: ARCutoutClassificationInput,
 ) -> ARCutoutClassificationResult:
@@ -41,7 +30,9 @@ async def classify_cutout(
     return classification_result
 
 
-@router.get("/arcnet/full_disk_detection", tags=["Full disk AR Detection"])
+@classificaiton_router.get(
+    "/arcnet/full_disk_detection", tags=["Full disk AR Detection"]
+)
 async def full_disk_detection(
     detection_request: ARDetectionInput = Depends(),
 ) -> List[ARDetection]:
@@ -53,20 +44,10 @@ async def full_disk_detection(
     return detection_result
 
 
-@router.post("/arcnet/full_disk_detection", tags=["Full disk AR Detection"])
-async def full_disk_detection(detection_request: ARDetectionInput) -> List[ARDetection]:
-    r"""
-    Detect and classify all ARs in a magnetogram at the given date as  json data.
-    """
-    detections = detect(detection_request.time)
-    detection_result = [ARDetection.model_validate(d) for d in detections]
-    return detection_result
-
-@router.post("/arcnet/full_disk_detection", tags=["Full disk AR Detection"])
-async def flare_forecast(detection_request: ARDetectionInput) -> List[ARDetection]:
+@forecast_router.post("/flare_forecast", tags=["Flare Forecast"])
+async def flare_forecast(detection_request: ARDetectionInput) -> FlareForecast:
     r"""
     Flare forecast for next 24 hours
     """
-    forecast = daily_flare_forecast(detection_request.time)
-    return forecast
-
+    forecast_result = daily_flare_forecast(detection_request.time)
+    return forecast_result
