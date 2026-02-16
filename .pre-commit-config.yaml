@@ -1,18 +1,19 @@
 repos:
     # This should be before any formatting hooks like isort
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: "v0.12.1"
+    rev: "v0.15.1"
     hooks:
-      - id: ruff
+      - id: ruff-check
         args: ["--fix"]
       # Run the formatter.
       - id: ruff-format
   - repo: https://github.com/PyCQA/isort
-    rev: 6.0.1
+    rev: 7.0.0
     hooks:
       - id: isort
+        args: ["--balanced", "-m", "3", "--tc"]
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: check-ast
       - id: check-case-conflict

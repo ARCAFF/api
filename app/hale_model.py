@@ -4,8 +4,13 @@ import torch
 from arccnet.models import train_utils as ut_t
 
 from app.config import settings
-from app.model_utils import (download_and_extract_model, load_state_dict,
-                             logger, preprocess_data, safe_inference)
+from app.model_utils import (
+    download_and_extract_model,
+    load_state_dict,
+    logger,
+    preprocess_data,
+    safe_inference,
+)
 
 
 def download_model():

@@ -3,50 +3,28 @@ import time
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import router
+from app.api import classification_router, forecast_router
 
-description = """
+main_description = """
 # ARCAFF API
 Active Region Classification and Flare Forecasting (ARCAFF) API
-
-### ARCNET
-
-Active Region Classification Network (ARCNET) provides an API to AR classifications.
-#### AR Cutout Classification
-
-Given a AR magnetogram cutout return the classifications Hale (magnetic) and McInstosh (modified Zurich) classifications.
-
-#### AR Detection
-
-Given a full disk magnetogram return the bounding boxes and classification for each detected AR.
-
 """
 
-tags_metadata = [
-    {
-        "name": "AR Cutout Classification",
-        "description": "Classify cutouts generated from a magnetogram at the given date and location.",
-    },
-    {
-        "name": "Full disk AR Detection",
-        "description": "Detect and classify all AR from a magnetogram for the given date.",
-    },
-]
-
-
+version = "0.3.0"
 app = FastAPI(
-    title="ARCNET",
-    description=description,
+    title="ARCAFF",
+    description=main_description,
     summary="Active Region Classification and Flare Forecasting (ARCAFF) API",
-    version="0.0.1",
     contact={
         "name": "ARCAFF",
-        "url": "http://www.arcaff.eu",
+        "url": "https://www.arcaff.eu",
     },
-    openapi_tags=tags_metadata,
+    docs_url=None,
+    redoc_url=None,
+    version=version,
 )
 
-app.include_router(router, prefix="")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins="*",
@@ -63,3 +41,66 @@ async def add_process_time_header(request: Request, call_next):
     process_time = time.time() - start_time
     response.headers["X-Process-Time"] = str(process_time)
     return response
+
+
+classification_description = """
+### ARCNET
+
+Active Region Classification Network (ARCNET) provides an API to AR classifications.
+#### AR Cutout Classification
+
+Given a AR magnetogram cutout return the classifications Hale (magnetic) and McInstosh (modified Zurich) classifications.
+
+#### AR Detection
+
+Given a full disk magnetogram return the bounding boxes and classification for each detected AR.
+
+"""
+
+
+classification_tags_metadata = [
+    {
+        "name": "AR Cutout Classification",
+        "description": "Classify cutouts generated from a magnetogram at the given date and location.",
+    },
+    {
+        "name": "Full disk AR Detection",
+        "description": "Detect and classify all AR from a magnetogram for the given date.",
+    },
+]
+
+classification_app = FastAPI(
+    title="ARCNET",
+    description=classification_description,
+    openapi_tags=classification_tags_metadata,
+    redoc_url=None,
+    version=version,
+)
+classification_app.include_router(classification_router)
+app.mount("/classification", classification_app)
+
+flares_description = """
+#### Flare forecast
+
+Flare forecasts.
+
+"""
+
+flares_tags_metadata = [
+    {
+        "name": "Flare Forecast",
+        "description": "Forecast solar flares.",
+    },
+]
+
+forecast_app = FastAPI(
+    title="Flares",
+    description=flares_description,
+    summary="Active Region Classification and Flare Forecasting (ARCAFF) API",
+    openapi_tags=flares_tags_metadata,
+    redoc_url=None,
+    version=version,
+)
+forecast_app.include_router(forecast_router)
+
+app.mount("/forecast", forecast_app)
