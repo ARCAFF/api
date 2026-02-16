@@ -80,9 +80,7 @@ class ARCutoutClassificationResult(BaseModel):
 
 
 class ARDetectionInput(BaseModel):
-    time: datetime = Field(
-        example="2022-11-12T13:14:15+00:00", ge=datetime(2011, 1, 1), le=datetime.now()
-    )
+    time: datetime = Field(example="2022-11-12T13:14:15+00:00", ge=datetime(2011, 1, 1), le=datetime.now())
 
 
 class HeliographicStonyhurstCoordinate(BaseModel):
@@ -116,7 +114,7 @@ class ARDetection(BaseModel):
     confidence: float = Field(title="Confidence", example="0.90")
 
 
-class DailyFlareForecast(BaseModel):
+class ARFlareForecast(BaseModel):
     noaa: int = Field(..., gt=0, description="Positive NOAA active region number")
     c: float = Field(..., ge=0.0, le=1.0, description="C-class flare probability")
     m: float = Field(..., ge=0.0, le=1.0, description="M-class flare probability")
@@ -125,14 +123,10 @@ class DailyFlareForecast(BaseModel):
     @model_validator(mode="after")
     def check_flare_hierarchy(self):
         if not (self.x <= self.m <= self.c):
-            raise ValueError("Flare probabilities must satisfy: x ≤ m ≤ c")
+            raise ValueError("Flare probabilities must satisfy: x <= m <= c")
         return self
 
 
-class ActiveRegionForecast(BaseModel):
-    timestamp: datetime = Field(..., description="Forecast timestamp (UTC)")
-    forecasts: List[DailyFlareForecast]
-
-
 class FlareForecast(BaseModel):
-    ars: List[ActiveRegionForecast]
+    timestamp: datetime = Field(..., description="Forecast timestamp (UTC)")
+    forecasts: List[ARFlareForecast]

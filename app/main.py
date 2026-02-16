@@ -88,7 +88,7 @@ Flare forecasts.
 
 flares_tags_metadata = [
     {
-        "name": "Forecast",
+        "name": "Flare Forecast",
         "description": "Forecast solar flares.",
     },
 ]

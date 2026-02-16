@@ -43,7 +43,7 @@ async def classify_cutout_get(
     "/arcnet/classify_cutout/", tags=["AR Cutout Classification"]
 )
 async def classify_cutout_post(
-    request: ARDetectionInput,
+    request: ARCutoutClassificationInput,
 ) -> ARCutoutClassificationResult:
     r"""
     Classify an AR cutout generated from a magnetogram at the given date and location as JSON data.
@@ -82,19 +82,19 @@ async def full_disk_detection_post(
 
 @forecast_router.get("/flare_forecast", tags=["Flare Forecast"])
 async def flare_forecast_get(
-    detection_request: ARDetectionInput = Depends(),
+    request: ARDetectionInput = Depends(),
 ) -> FlareForecast:
     r"""
     Flare forecast for next 24 hours
     """
-    forecast_result = daily_flare_forecast(detection_request.time)
+    forecast_result = daily_flare_forecast(request.time)
     return forecast_result
 
 
 @forecast_router.post("/flare_forecast", tags=["Flare Forecast"])
-async def flare_forecast_post(detection_request: ARDetectionInput) -> FlareForecast:
+async def flare_forecast_post(request: ARDetectionInput) -> FlareForecast:
     r"""
     Flare forecast for next 24 hours
     """
-    forecast_result = daily_flare_forecast(detection_request.time)
+    forecast_result = daily_flare_forecast(request.time)
     return forecast_result
