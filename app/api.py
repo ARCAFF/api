@@ -12,7 +12,7 @@ from app.schemas import (
     FlareForecast,
 )
 
-classificaiton_router = APIRouter()
+classification_router = APIRouter()
 forecast_router = APIRouter()
 
 
@@ -27,26 +27,26 @@ def _perform_classification(
     return ARCutoutClassificationResult.model_validate(classification)
 
 
-@classificaiton_router.get(
+@classification_router.get(
     "/arcnet/classify_cutout/", tags=["AR Cutout Classification"]
 )
 async def classify_cutout_get(
     request: ARCutoutClassificationInput = Depends(),
 ) -> ARCutoutClassificationResult:
     r"""
-    Classify an AR cutout generated from a magnetogram at the given date and location as json data.
+    Classify an AR cutout generated from a magnetogram at the given date and location as JSON data.
     """
     return _perform_classification(request)
 
 
-@classificaiton_router.post(
+@classification_router.post(
     "/arcnet/classify_cutout/", tags=["AR Cutout Classification"]
 )
 async def classify_cutout_post(
-    request: ARCutoutClassificationInput,
+    request: ARDetectionInput,
 ) -> ARCutoutClassificationResult:
     r"""
-    Classify an AR cutout generated from a magnetogram at the given date and location as json data.
+    Classify an AR cutout generated from a magnetogram at the given date and location as JSON data.
     """
     return _perform_classification(request)
 
@@ -56,7 +56,7 @@ def _perform_detection(request: ARDetectionInput) -> List[ARDetection]:
     return [ARDetection.model_validate(d) for d in detections]
 
 
-@classificaiton_router.get(
+@classification_router.get(
     "/arcnet/full_disk_detection", tags=["Full disk AR Detection"]
 )
 async def full_disk_detection_get(
@@ -68,11 +68,11 @@ async def full_disk_detection_get(
     return _perform_detection(request)
 
 
-@classificaiton_router.post(
+@classification_router.post(
     "/arcnet/full_disk_detection", tags=["Full disk AR Detection"]
 )
 async def full_disk_detection_post(
-    request: ARDetectionInput = Depends(),
+    request: ARDetectionInput,
 ) -> List[ARDetection]:
     r"""
     Detect and classify all ARs in a magnetogram at the given date as a URL parameter.

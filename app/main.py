@@ -3,9 +3,9 @@ import time
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import classificaiton_router, forecast_router
+from app.api import classification_router, forecast_router
 
-main_descripion = """
+main_description = """
 # ARCAFF API
 Active Region Classification and Flare Forecasting (ARCAFF) API
 """
@@ -13,10 +13,11 @@ Active Region Classification and Flare Forecasting (ARCAFF) API
 version = "0.3.0"
 app = FastAPI(
     title="ARCAFF",
-    description=main_descripion,
+    description=main_description,
+    summary="Active Region Classification and Flare Forecasting (ARCAFF) API",
     contact={
         "name": "ARCAFF",
-        "url": "http://www.arcaff.eu",
+        "url": "https://www.arcaff.eu",
     },
     docs_url=None,
     redoc_url=None,
@@ -68,18 +69,17 @@ classification_tags_metadata = [
     },
 ]
 
-classifcation_app = FastAPI(
+classification_app = FastAPI(
     title="ARCNET",
     description=classification_description,
-    summary="Active Region Classification and Flare Forecasting (ARCAFF) API",
     openapi_tags=classification_tags_metadata,
     redoc_url=None,
     version=version,
 )
-classifcation_app.include_router(classificaiton_router)
-app.mount("/classification", classifcation_app)
+classification_app.include_router(classification_router)
+app.mount("/classification", classification_app)
 
-flares_desciption = """
+flares_description = """
 #### Flare forecast
 
 Flare forecasts.
@@ -95,7 +95,7 @@ flares_tags_metadata = [
 
 forecast_app = FastAPI(
     title="Flares",
-    description=flares_desciption,
+    description=flares_description,
     summary="Active Region Classification and Flare Forecasting (ARCAFF) API",
     openapi_tags=flares_tags_metadata,
     redoc_url=None,
