@@ -22,9 +22,9 @@ def download_magnetogram(time, download_path):
     Parameters
     ----------
     time : datetime.datetime
-        Time to search for closest magnetogram
+        Time to search for the closest magnetogram
     download_path : Path
-        Path to datadownload directory
+        Path to data download directory
 
     """
     query = Fido.search(

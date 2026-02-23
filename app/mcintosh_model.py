@@ -4,10 +4,19 @@ from arccnet.models import train_utils as ut_t
 from arccnet.models.cutouts.mcintosh.models import HierarchicalResNet
 
 from app.config import settings
-from app.mcintosh_encoders import (c_classes, create_encoders, p_classes,
-                                   z_classes)
-from app.model_utils import (download_and_extract_model, load_state_dict,
-                             logger, preprocess_data, safe_inference)
+from app.mcintosh_encoders import (
+    c_classes,
+    create_encoders,
+    p_classes,
+    z_classes,
+)
+from app.model_utils import (
+    download_and_extract_model,
+    load_state_dict,
+    logger,
+    preprocess_data,
+    safe_inference,
+)
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model_name = "resnet18"

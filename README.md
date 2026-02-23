@@ -34,7 +34,7 @@ By default, the data and model files are stored in `/arccnet/data` and `/arccnet
 
 ```
 curl -X 'POST' \
-  'http://127.0.0.1:8000/arcnet/classify_cutout/' \
+  'http://127.0.0.1:8000/classification/arcnet/classify_cutout/' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -58,7 +58,7 @@ curl -X 'POST' \
 
 ```
 curl -X 'POST' \
-  'http://127.0.0.1:8000/arcnet/full_disk_detection' \
+  'http://127.0.0.1:8000/classification/arcnet/full_disk_detection' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -115,4 +115,47 @@ curl -X 'POST' \
     "mcintosh_class": "Axx"
   }
 ]
+```
+
+## Flare Forecast
+
+```
+curl -X 'GET' \
+  'http://127.0.0.1:8000/forecast/flare_forecast?time=2025-02-18T15%3A08' \
+  -H 'accept: application/json'
+```
+
+```
+{
+  "ars": [
+    {
+      "timestamp": "2025-02-18T15:08:00",
+      "forecasts": [
+        {
+          "noaa": 13664,
+          "c": 0.45,
+          "m": 0.25,
+          "x": 0.1
+        },
+        {
+          "noaa": 13666,
+          "c": 0.5,
+          "m": 0.3,
+          "x": 0.15
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-02-18T15:08:00",
+      "forecasts": [
+        {
+          "noaa": 13654,
+          "c": 0.2,
+          "m": 0.08,
+          "x": 0.02
+        }
+      ]
+    }
+  ]
+}
 ```

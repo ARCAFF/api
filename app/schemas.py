@@ -1,8 +1,22 @@
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 
 from fastapi import Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
+
+__all__ = [
+    "ARCutoutClassificationInput",
+    "McIntoshComponent",
+    "McIntoshComponents",
+    "ARCutoutClassificationResult",
+    "ARDetectionInput",
+    "HeliographicStonyhurstCoordinate",
+    "BoundingBox",
+    "ARDetection",
+    "FlareForecast",
+    "DailyFlareForecast",
+    "ActiveRegionForecast",
+]
 
 
 class ARCutoutClassificationInput(BaseModel):
@@ -66,9 +80,7 @@ class ARCutoutClassificationResult(BaseModel):
 
 
 class ARDetectionInput(BaseModel):
-    time: datetime = Field(
-        example="2022-11-12T13:14:15+00:00", ge=datetime(2011, 1, 1), le=datetime.now()
-    )
+    time: datetime = Field(example="2022-11-12T13:14:15+00:00", ge=datetime(2011, 1, 1), le=datetime.now())
 
 
 class HeliographicStonyhurstCoordinate(BaseModel):
@@ -100,3 +112,21 @@ class ARDetection(BaseModel):
     bbox: BoundingBox
     hale_class: str = Field(title="Hale Classification", example="Beta")
     confidence: float = Field(title="Confidence", example="0.90")
+
+
+class ARFlareForecast(BaseModel):
+    noaa: int = Field(..., gt=0, description="Positive NOAA active region number")
+    c: float = Field(..., ge=0.0, le=1.0, description="C-class flare probability")
+    m: float = Field(..., ge=0.0, le=1.0, description="M-class flare probability")
+    x: float = Field(..., ge=0.0, le=1.0, description="X-class flare probability")
+
+    @model_validator(mode="after")
+    def check_flare_hierarchy(self):
+        if not (self.x <= self.m <= self.c):
+            raise ValueError("Flare probabilities must satisfy: x <= m <= c")
+        return self
+
+
+class FlareForecast(BaseModel):
+    timestamp: datetime = Field(..., description="Forecast timestamp (UTC)")
+    forecasts: List[ARFlareForecast]
