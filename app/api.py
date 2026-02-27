@@ -3,13 +3,13 @@ from typing import List
 from fastapi import APIRouter, Depends
 
 from app.classify import classify, detect
-from app.forecast import daily_flare_forecast
+from app.forecast import pt_daily_flare_forecast, ts_flare_forecast
 from app.schemas import (
     ARCutoutClassificationInput,
     ARCutoutClassificationResult,
     ARDetection,
     ARDetectionInput,
-    FlareForecast,
+    TSFlareForecast, PTFlareForecast,
 )
 
 classification_router = APIRouter()
@@ -80,21 +80,33 @@ async def full_disk_detection_post(
     return _perform_detection(request)
 
 
-@forecast_router.get("/flare_forecast", tags=["Flare Forecast"])
-async def flare_forecast_get(
+@forecast_router.get("/pt_flare_forecast", tags=["Flare Forecast"])
+async def pt_flare_forecast_get(
     request: ARDetectionInput = Depends(),
-) -> FlareForecast:
+) -> PTFlareForecast:
     r"""
     Flare forecast for next 24 hours
     """
-    forecast_result = daily_flare_forecast(request.time)
+    forecast_result = pt_daily_flare_forecast(request.time)
     return forecast_result
 
 
-@forecast_router.post("/flare_forecast", tags=["Flare Forecast"])
-async def flare_forecast_post(request: ARDetectionInput) -> FlareForecast:
+@forecast_router.post("/pt_flare_forecast", tags=["Flare Forecast"])
+async def pt_flare_forecast_post(request: ARDetectionInput) -> PTFlareForecast:
     r"""
     Flare forecast for next 24 hours
     """
-    forecast_result = daily_flare_forecast(request.time)
+    forecast_result = pt_daily_flare_forecast(request.time)
+    return forecast_result
+
+
+@forecast_router.get("/ts_flare_forecast", tags=["Flare Forecast"])
+async def ts_flare_forecast_get(request: ARDetectionInput = Depends()) -> TSFlareForecast:
+    forecast_result = ts_flare_forecast(request.time)
+    return forecast_result
+
+
+@forecast_router.post("/ts_flare_forecast", tags=["Flare Forecast"])
+async def ts_flare_forecast_post(request: ARDetectionInput) -> TSFlareForecast:
+    forecast_result = ts_flare_forecast(request.time)
     return forecast_result
